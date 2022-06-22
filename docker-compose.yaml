@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+  outline-postgres:
+    image: postgres:13.7
+    hostname: outline-postgres
+    container_name: outline-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: outlinepostgres
+      POSTGRES_DB: outline
+    ports:
+      - 5432:5432
+    volumes:
+      - ./data/outline-postgres:/var/lib/postgresql/data
+    networks:
+      - outline
+    restart: always
+    
+  outline-redis:
+    image: redis:7.0.2
+    hostname: outline-redis
+    container_name: outline-redis
+    ports:
+      - 6379:6379
+    networks:
+      - outline
+    restart: always
+
+  outline-wiki:
+    image: outlinewiki/outline:0.64.3
+    hostname: outline-wiki
+    container_name: outline-wiki
+    env_file: ./.env.outline
+    networks:
+      - outline
+    ports:
+      - 3000:3000
+    command: sh -c "yarn sequelize:migrate --env=production-ssl-disabled && yarn start --env=production-ssl-disabled --host 0.0.0.0"
+    restart: always
+    depends_on:
+      - outline-postgres
+      - outline-redis
+  
+  # outline-nginx:
+  #   image: nginx:1.22.0
+  #   hostname: outline-nginx
+  #   container_name: outline-nginx
+  #   networks:
+  #     - outline
+  #   ports:
+  #     - 8888:80
+  #   volumes:
+  #     - ./config/outline-nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+  #   restart: always
+  #   depends_on:
+  #     - outline-wiki
+    
+
+networks:
+  outline:
+    driver: bridge
